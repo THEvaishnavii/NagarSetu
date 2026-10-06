@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  extensions = [postgis]
+}
+
+
+enum Role {
+  CITIZEN
+  ADMIN
+}
+
+enum Category {
+  POTHOLE
+  GARBAGE
+  WATER
+  STREETLIGHT
+  OTHER
+}
+
+enum Status {
+  REPORTED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+}
+
+
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(CITIZEN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  // User → Issue
+  issues       Issue[]
+
+  // User → Comment
+  comments     Comment[]
+
+  // User → Upvote
+  upvotes      Upvote[]
+
+  // User → StatusHistory
+  statusChanges StatusHistory[]
+
+
+
+}
+
+
+
+
+model Department {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  email  String?
+
+  // Department → Issue
+  issues Issue[]
+  users     User[]
+}
+
+
+
+
+model Issue {
+  id                  String    @id @default(uuid())
+  title               String?
+  description         String?
+  category            Category?
+  status              Status    @default(REPORTED)
+
+  latitude            Float
+  longitude           Float
+
+  location            Unsupported("geography(Point, 4326)")? @default(dbgenerated())
+
+  imageUrl            String?
+  resolutionImageUrl  String?
+
+  aiSuggestedCategory Category?
+  aiBrief             String?
+  adminNotes          String?
+
+  reporterId          String
+  departmentId        String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  resolvedAt          DateTime?
+
+  // Issue → User
+  reporter            User        @relation(fields: [reporterId], references: [id])
+
+  // Issue → Department
+  department          Department? @relation(fields: [departmentId], references: [id])
+
+  // Issue → Comment
+  comments            Comment[]
+
+  // Issue → Upvote
+  upvotes             Upvote[]
+
+  // Issue → StatusHistory
+  statusHistory       StatusHistory[]
+
+    //ading indexing 
+  @@index([reporterId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([location], type: Gist)
+
+
+
+
+}
+
+
+
+
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  userId    String
+  issueId   String
+  createdAt DateTime @default(now())
+
+  // Comment → User
+  author   User  @relation(fields: [userId], references: [id])
+
+  // Comment → Issue
+  issue     Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+
+
+
+model Upvote {
+  userId    String
+  issueId   String
+  createdAt DateTime @default(now())
+
+  @@id([userId, issueId])
+
+  // Upvote → User
+  user      User  @relation(fields: [userId], references: [id])
+
+  // Upvote → Issue
+  issue     Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+
+
+model StatusHistory {
+  id          String   @id @default(uuid())
+  issueId     String
+  fromStatus  Status?
+  toStatus    Status
+  changedById String
+  createdAt   DateTime @default(now())
+
+  // StatusHistory → Issue
+  issue     Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  // StatusHistory → User
+  changedBy User @relation(fields: [changedById], references: [id])
+
+  @@index([issueId])
+}

@@ -1,0 +1,446 @@
+import dotenv from "dotenv";
+dotenv.config();
+
+import prisma from "../config/prisma.js";
+import bcrypt from "bcryptjs";
+
+async function main() {
+
+
+  // ============================================
+  // 1. DELETE OLD DATA
+  // ============================================
+
+  
+
+  await prisma.upvote.deleteMany();
+  await prisma.comment.deleteMany();
+  await prisma.statusHistory.deleteMany();
+  await prisma.issue.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.department.deleteMany();
+
+  // ============================================
+  // 2. CREATE DEPARTMENTS
+  // ============================================
+
+  console.log("Creating departments...");
+
+  const publicWorks = await prisma.department.create({
+    data: {
+      name: "Public Works",
+      email: "publicworks@nagarsetu.test",
+    },
+  });
+
+  const sanitation = await prisma.department.create({
+    data: {
+      name: "Sanitation",
+      email: "sanitation@nagarsetu.test",
+    },
+  });
+
+  const waterBoard = await prisma.department.create({
+    data: {
+      name: "Water Board",
+      email: "water@nagarsetu.test",
+    },
+  });
+
+  const electrical = await prisma.department.create({
+    data: {
+      name: "Electrical",
+      email: "electrical@nagarsetu.test",
+    },
+  });
+
+  const parks = await prisma.department.create({
+    data: {
+      name: "Parks & Rec",
+      email: "parks@nagarsetu.test",
+    },
+  });
+
+  // ============================================
+  // 3. CREATE USERS
+  // ============================================
+
+
+
+  const passwordHash = await bcrypt.hash("password123", 10);
+
+  const admin = await prisma.user.create({
+    data: {
+      name: "SMC Admin",
+      email: "admin@nagarsetu.test",
+      passwordHash: passwordHash,
+      role: "ADMIN",
+      departmentId: null,
+    },
+  });
+
+  const priya = await prisma.user.create({
+    data: {
+      name: "Priya Patil",
+      email: "priya@nagarsetu.test",
+      passwordHash: passwordHash,
+      role: "CITIZEN",
+    },
+  });
+
+  const rohan = await prisma.user.create({
+    data: {
+      name: "Rohan Kulkarni",
+      email: "rohan@nagarsetu.test",
+      passwordHash: passwordHash,
+      role: "CITIZEN",
+    },
+  });
+
+  const sneha = await prisma.user.create({
+    data: {
+      name: "Sneha Jadhav",
+      email: "sneha@nagarsetu.test",
+      passwordHash: passwordHash,
+      role: "CITIZEN",
+    },
+  });
+
+  // ============================================
+  // 4. CREATE ISSUES
+  // ============================================
+
+
+  // Issue #1
+  const issue1 = await prisma.issue.create({
+    data: {
+      title: "Massive pothole near Rajwada Chowk",
+      description:
+        "A large pothole has developed near Rajwada Chowk and is dangerous for vehicles.",
+      category: "POTHOLE",
+      status: "REPORTED",
+      reporterId: priya.id,
+      departmentId: publicWorks.id,
+
+      // Put your image URL here if you have one
+      imageUrl: "https://placehold.co/600x400?text=Pothole",
+
+      statusHistory: {
+        create: {
+          fromStatus: null,
+          toStatus: "REPORTED",
+          changedById: priya.id,
+        },
+      },
+    },
+  });
+
+  // Issue #2
+  const issue2 = await prisma.issue.create({
+    data: {
+      title: "Deep pothole outside the bank",
+      description:
+        "A deep pothole outside the bank is causing difficulty for vehicles and pedestrians.",
+      category: "POTHOLE",
+      status: "REPORTED",
+      reporterId: rohan.id,
+      departmentId: publicWorks.id,
+
+      // No photo for this issue
+
+      statusHistory: {
+        create: {
+          fromStatus: null,
+          toStatus: "REPORTED",
+          changedById: rohan.id,
+        },
+      },
+    },
+  });
+
+  // Issue #3
+  const issue3 = await prisma.issue.create({
+    data: {
+      title: "Overflowing garbage bin at Market Yard",
+      description:
+        "The garbage bin at Market Yard is overflowing and waste is spreading onto the road.",
+      category: "GARBAGE",
+      status: "ACKNOWLEDGED",
+      reporterId: sneha.id,
+      departmentId: sanitation.id,
+
+      imageUrl: "https://placehold.co/600x400?text=Garbage",
+
+      statusHistory: {
+        create: [
+          {
+            fromStatus: null,
+            toStatus: "REPORTED",
+            changedById: sneha.id,
+          },
+          {
+            fromStatus: "REPORTED",
+            toStatus: "ACKNOWLEDGED",
+            changedById: admin.id,
+          },
+        ],
+      },
+    },
+  });
+
+  // Issue #4
+  const issue4 = await prisma.issue.create({
+    data: {
+      title: "Burst pipe flooding Miraj Road",
+      description:
+        "A burst water pipe is flooding part of Miraj Road and creating a safety hazard.",
+
+      category: "WATER",
+      status: "IN_PROGRESS",
+
+      reporterId: priya.id,
+      departmentId: waterBoard.id,
+
+      imageUrl: "https://placehold.co/600x400?text=Water+Leak",
+
+      aiSuggestedCategory: "WATER",
+      aiBrief:
+        "AI detected a likely water leakage from the submitted complaint.",
+      adminNotes: "Contractor visiting Friday.",
+
+      statusHistory: {
+        create: [
+          {
+            fromStatus: null,
+            toStatus: "REPORTED",
+            changedById: priya.id,
+          },
+          {
+            fromStatus: "REPORTED",
+            toStatus: "ACKNOWLEDGED",
+            changedById: admin.id,
+          },
+          {
+            fromStatus: "ACKNOWLEDGED",
+            toStatus: "IN_PROGRESS",
+            changedById: admin.id,
+          },
+        ],
+      },
+    },
+  });
+
+  // Issue #5
+  const issue5 = await prisma.issue.create({
+    data: {
+      title: "Streetlights out near Walchand College",
+      description:
+        "Several streetlights near Walchand College are not working during the night.",
+      category: "STREETLIGHT",
+      status: "RESOLVED",
+      reporterId: rohan.id,
+      departmentId: electrical.id,
+
+      resolvedAt: new Date(),
+
+      statusHistory: {
+        create: [
+          {
+            fromStatus: null,
+            toStatus: "REPORTED",
+            changedById: rohan.id,
+          },
+          {
+            fromStatus: "REPORTED",
+            toStatus: "ACKNOWLEDGED",
+            changedById: admin.id,
+          },
+          {
+            fromStatus: "ACKNOWLEDGED",
+            toStatus: "IN_PROGRESS",
+            changedById: admin.id,
+          },
+          {
+            fromStatus: "IN_PROGRESS",
+            toStatus: "RESOLVED",
+            changedById: admin.id,
+          },
+        ],
+      },
+    },
+  });
+
+  // Issue #6
+  const issue6 = await prisma.issue.create({
+    data: {
+      title: "Fallen tree near Ganpati Mandir",
+      description:
+        "A fallen tree is blocking part of the road near Ganpati Mandir.",
+      category: "OTHER",
+      status: "REPORTED",
+      reporterId: sneha.id,
+
+      // IMPORTANT:
+      // No department yet.
+
+      statusHistory: {
+        create: {
+          fromStatus: null,
+          toStatus: "REPORTED",
+          changedById: sneha.id,
+        },
+      },
+    },
+  });
+
+  // Issue #7
+  const issue7 = await prisma.issue.create({
+    data: {
+      // No title because AI hasn't processed it yet.
+      title: "",
+
+      description:
+        "There is a civic issue near Krishna river ghat that needs attention.",
+
+      // No category because AI hasn't processed it yet.
+      // No department yet.
+
+      status: "REPORTED",
+      reporterId: priya.id,
+
+      statusHistory: {
+        create: {
+          fromStatus: null,
+          toStatus: "REPORTED",
+          changedById: priya.id,
+        },
+      },
+    },
+  });
+
+  // Issue #8
+  const issue8 = await prisma.issue.create({
+    data: {
+      title: "Streetlight not working",
+      
+      // No description intentionally.
+      description: "",
+
+      category: "STREETLIGHT",
+      status: "ACKNOWLEDGED",
+      reporterId: rohan.id,
+      departmentId: electrical.id,
+
+      statusHistory: {
+        create: [
+          {
+            fromStatus: null,
+            toStatus: "REPORTED",
+            changedById: rohan.id,
+          },
+          {
+            fromStatus: "REPORTED",
+            toStatus: "ACKNOWLEDGED",
+            changedById: admin.id,
+          },
+        ],
+      },
+    },
+  });
+
+  // ============================================
+  // 5. CREATE UPVOTES
+  // ============================================
+
+
+
+  await prisma.upvote.createMany({
+    data: [
+      // Issue #1
+      {
+        issueId: issue1.id,
+        userId: rohan.id,
+      },
+      {
+        issueId: issue1.id,
+        userId: sneha.id,
+      },
+
+      // Issue #3
+      {
+        issueId: issue3.id,
+        userId: priya.id,
+      },
+
+      // Issue #4
+      {
+        issueId: issue4.id,
+        userId: rohan.id,
+      },
+
+      // Issue #5
+      {
+        issueId: issue5.id,
+        userId: priya.id,
+      },
+      {
+        issueId: issue5.id,
+        userId: sneha.id,
+      },
+    ],
+  });
+
+  // ============================================
+  // 6. CREATE COMMENTS
+  // ============================================
+
+
+
+  await prisma.comment.createMany({
+    data: [
+      {
+        issueId: issue1.id,
+        userId: rohan.id,
+        text: "Hit this pothole on my bike yesterday, really dangerous.",
+      },
+      {
+        issueId: issue1.id,
+        userId: sneha.id,
+        text: "It gets worse every time it rains.",
+      },
+      {
+        issueId: issue4.id,
+        userId: admin.id,
+        text: "Forwarded to the Water Board team.",
+      },
+      {
+        issueId: issue3.id,
+        userId: priya.id,
+        text: "The bin hasn't been emptied since Monday.",
+      },
+    ],
+  });
+
+  // ============================================
+  // 7. FINISHED
+  // ============================================
+
+  console.log("Seed completed successfully!");
+  console.log("Created:");
+  console.log("- 5 departments");
+  console.log("- 4 users");
+  console.log("- 8 issues");
+  console.log("- 15 status history records");
+  console.log("- 6 upvotes");
+  console.log("- 4 comments");
+}
+
+main()
+  .catch((error) => {
+    console.error("Seed failed:");
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
