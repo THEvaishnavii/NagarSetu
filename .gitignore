@@ -15,9 +15,6 @@ dist/
 dist-ssr/
 *.local
 
-# Environment variables
-.env
-.env.*
 
 # Editor directories and files
 .vscode/*
@@ -29,3 +26,20 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+
+# Environment variables
+.env
+.env.*
+
+
+
+#databse url 
+
+DATABASE_URL = "postgresql://neondb_owner:npg_76XjRHGButaQ@ep-polished-heart-b4gsxsvm.c-6.us-east-2.aws.neon.tech/NagarSetu%20databse?sslmode=require&channel_binding=require"
+
+
+
+#prisma 
+
+generated/
